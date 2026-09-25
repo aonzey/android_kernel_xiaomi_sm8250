@@ -199,7 +199,10 @@ if [ $KSU_ENABLE -eq 1 ]; then
     scripts/config --file out/.config \
     -e KSU \
     -e THREAD_INFO_IN_TASK \
+    -e SUSFS \
+    -e SUSFS_HAS_MAGIC_MOUNT \
     -e KSU_SUSFS \
+    -e KSU_SUSFS_HAS_MAGIC_MOUNT \
     -e KSU_SUSFS_SUS_PATH \
     -e KSU_SUSFS_SUS_MOUNT \
     -e KSU_SUSFS_SUS_KSTAT \
