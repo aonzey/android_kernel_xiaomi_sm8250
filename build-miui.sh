@@ -116,6 +116,20 @@ else
     echo "KSU is disabled"
 fi
 
+# ------------------ 追加 SUSFS 修复逻辑 ------------------
+if [ $KSU_ENABLE -eq 1 ]; then
+    echo "Fixing SUSFS missing headers and Makefile..."
+    # 1. 自动从 susfs4ksu 官方仓库下载补全缺失的 susfs.h 头文件 (适配 5.4 内核)
+    curl -LSs "https://raw.githubusercontent.com/gitlab-anonym/susfs4ksu/main/kernel_patches/include/linux/susfs.h" -o include/linux/susfs.h || \
+    curl -LSs "https://gitlab.com/simonpunk/susfs4ksu/-/raw/main/kernel_patches/include/linux/susfs.h" -o include/linux/susfs.h
+
+    # 2. 确保在 fs/Makefile 中将 susfs.o 强行打包进内核
+    if ! grep -q "susfs.o" fs/Makefile; then
+        echo "obj-y += susfs.o" >> fs/Makefile
+    fi
+fi
+# --------------------------------------------------------
+
 echo "Integrating Baseband-guard..."
 curl -LSs "https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh" | bash
 sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/selinux/selinux,baseband_guard/ } }' security/Kconfig
@@ -194,6 +208,14 @@ sed -i 's/\/\/39 01 00 00 11 00 03 51 03 FF/39 01 00 00 11 00 03 51 03 FF/g' ${d
 
 
 make $MAKE_ARGS ${TARGET_DEVICE}_defconfig
+
+if [ $KSU_ENABLE -eq 1 ]; then
+    echo "CONFIG_KSU=y" >> out/.config
+    echo "CONFIG_KSU_SUSFS=y" >> out/.config
+    echo "CONFIG_SUSFS=y" >> out/.config
+    echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> out/.config
+    echo "CONFIG_SUSFS_HAS_MAGIC_MOUNT=y" >> out/.config
+fi
 
 if [ $KSU_ENABLE -eq 1 ]; then
     scripts/config --file out/.config \
